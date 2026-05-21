@@ -62,5 +62,23 @@ python build.py
 
 O resultado aparecerá dentro da pasta `dist/` como um arquivo único (`DestinosPDF.exe` no Windows, ou `DestinosPDF` no Linux). 
 
-### 3. Releases Estáveis
-Versões autossuficientes e fechadas estão contidas na pasta `/releases` do código-fonte, acompanhadas de arquivos `.txt` contendo a verificação criptográfica de Hash, comprovando a integridade dos binários.
+### 3. Releases Estáveis e Verificação de Segurança (Hashes)
+Versões autossuficientes já compiladas e prontas para uso estão contidas na pasta `/releases` (separadas por `linux` e `windows`).
+
+Para garantir que o arquivo não foi corrompido durante o download e que é exatamente a versão oficial estável, disponibilizamos arquivos `.sha256.txt` junto aos executáveis contendo a assinatura de Hash original.
+
+**Como conferir a integridade do executável (Hash SHA-256):**
+
+**No Linux:**
+Abra o terminal na pasta `releases/linux` e digite:
+```bash
+sha256sum -c DestinosPDF.sha256.txt
+```
+*Se estiver correto, a saída será `DestinosPDF: OK`.*
+
+**No Windows:**
+Abra o PowerShell na pasta `releases\windows` e digite:
+```powershell
+Get-FileHash DestinosPDF.exe | Format-List
+```
+Compare o valor de `Hash` exibido na tela com a sequência de letras e números que está dentro do arquivo `DestinosPDF.exe.sha256.txt`. Se forem idênticos, o arquivo é seguro e íntegro!
