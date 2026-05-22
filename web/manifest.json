@@ -1,0 +1,18 @@
+{
+  "name": "Destinos PDF Web",
+  "short_name": "DestinosPDF",
+  "description": "Criador de Destinos Nomeados e Redação de Emendas em PDF 100% Local.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d0e12",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "../hand-point.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Destinos PDF Web - PWA Client-Side</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Automatize a criação de destinos nomeados e faça redação de títulos em PDFs de emendas de relator, tudo 100% no navegador de forma privada.">
+  <meta name="theme-color" content="#6366f1">
+  
+  <!-- Web App Manifest & Service Worker -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="../hand-point.png">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Local Premium Styling -->
+  <link rel="stylesheet" href="index.css">
+  
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  
+  <!-- PDF-lib CDN -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+  <!-- Pako CDN (zlib compression/decompression) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+</head>
+<body>
+
+  <div class="app-layout">
+    
+    <!-- SIDEBAR DE CONTROLE -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-area">
+          <img src="../hand-point.png" alt="Icone Mão Apontando" class="logo-icon">
+          <h1 class="logo-title">Destinos PDF <span>Web</span></h1>
+        </div>
+      </div>
+      
+      <!-- Seção de Parâmetros -->
+      <section class="panel-section" aria-labelledby="settings-heading">
+        <h2 id="settings-heading" class="section-title">Configurações</h2>
+        <div class="input-group">
+          <label for="commissionInput">Sigla da Comissão:</label>
+          <input type="text" id="commissionInput" value="CMA" placeholder="Ex: CMA, CESP" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="lastEmendaInput">Nº da última emenda:</label>
+          <input type="number" id="lastEmendaInput" value="2" min="0">
+        </div>
+      </section>
+      
+      <!-- Seção de Destinos Gerados -->
+      <section class="panel-section fill-height" aria-labelledby="destinations-heading">
+        <div class="section-header">
+          <h2 id="destinations-heading" class="section-title">Destinos Criados (<span id="destCount">0</span>)</h2>
+          <button id="btnClearAll" class="btn btn-text btn-danger-text" title="Limpar todos os destinos">Limpar</button>
+        </div>
+        
+        <div id="destinationsList" class="destinations-list" role="list">
+          <div class="empty-state">
+            <p>Nenhum destino criado ainda.</p>
+            <p class="hint">Clique com o botão direito em uma página do PDF para marcar um destino ou substitua textos.</p>
+          </div>
+        </div>
+      </section>
+      
+      <div class="sidebar-footer">
+        <div class="offline-badge">
+          <span class="badge-dot"></span> Offline-Ready (PWA)
+        </div>
+      </div>
+    </aside>
+    
+    <!-- ÁREA PRINCIPAL DO PDF -->
+    <main class="main-workspace">
+      
+      <!-- Barra de Controle Superior -->
+      <header class="workspace-header">
+        <div class="header-left">
+          <!-- Botão personalizado para carregar arquivo -->
+          <label class="btn btn-primary" id="btnUploadLabel">
+            <input type="file" id="fileInput" accept="application/pdf" style="display: none;">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Abrir PDF
+          </label>
+          <span id="fileNameDisplay" class="file-name-display">Nenhum arquivo carregado</span>
+        </div>
+        
+        <div class="header-right">
+          <!-- Zoom e Ações -->
+          <div class="zoom-controls">
+            <button id="btnZoomOut" class="btn btn-icon" title="Zoom Out" aria-label="Diminuir Zoom">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+</svg>
+            </button>
+            <span id="zoomVal" class="zoom-val">150%</span>
+            <button id="btnZoomIn" class="btn btn-icon" title="Zoom In" aria-label="Aumentar Zoom">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+</svg>
+            </button>
+          </div>
+          <button id="btnHelp" class="btn btn-secondary" title="Instruções de Uso" aria-label="Ajuda">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Ajuda
+          </button>
+          
+          <button id="btnExport" class="btn btn-success" disabled>
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Salvar PDF/A
+          </button>
+        </div>
+      </header>
+      
+      <!-- Container do Visualizador do PDF -->
+      <div id="viewerContainer" class="viewer-container">
+        <div id="pdfViewer" class="pdf-viewer">
+          <!-- Estado Inicial Vazio -->
+          <div class="viewer-empty-state">
+            <div class="icon-glow">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="large-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <h3>Nenhum PDF selecionado</h3>
+            <p>Selecione um arquivo PDF para começar a criar destinos nomeados e substituir títulos de emenda.</p>
+            <button onclick="document.getElementById('fileInput').click()" class="btn btn-primary">Escolher Arquivo</button>
+          </div>
+        </div>
+      </div>
+      
+    </main>
+    
+  </div>
+
+  <!-- CONTEXT MENU PERSONALIZADO -->
+  <div id="customContextMenu" class="context-menu" style="display: none;" role="menu">
+    <button class="context-menu-item" id="menuAddEmenda" role="menuitem">
+      <span>📌 Criar destino Emenda <span class="next-emenda-num">X</span></span>
+    </button>
+    <button class="context-menu-item" id="menuReplaceText" style="display: none;" role="menuitem">
+      <span>✏️ Criar destino e novo título...</span>
+    </button>
+    <button class="context-menu-item" id="menuAddSubemenda" role="menuitem">
+      <span>📎 Criar destino para subemenda...</span>
+    </button>
+  </div>
+
+  <!-- DIALOG DE AJUDA -->
+  <dialog id="helpModal" closedby="any" aria-labelledby="helpTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="helpTitle">Como usar o Destinos PDF</h2>
+        <button type="button" id="closeHelp" class="btn-close-modal" aria-label="Fechar Ajuda">&times;</button>
+      </div>
+      <div class="form-body read-only-preview" style="max-height: 400px; text-align: left; font-family: var(--font-body); font-size: 0.875rem; white-space: normal; color: var(--text-main);">
+        <p style="margin-bottom: 8px;"><strong>1. Abrir o PDF:</strong> Clique em "Abrir PDF" para carregar o arquivo a ser modificado.</p>
+        <p style="margin-bottom: 8px;"><strong>2. Configuração Inicial:</strong> Na barra lateral esquerda, informe a <i>Sigla da Comissão</i> padrão e o <i>Nº da última emenda</i> apresentada. O aplicativo iniciará a numeração das emendas do relator a partir do número seguinte.</p>
+        <p style="margin-bottom: 8px;"><strong>3. Criar Destino simples:</strong> Clique com o botão direito em qualquer local da página e escolha "📌 Criar destino Emenda N". O documento rolará até este ponto quando o destino for acessado.</p>
+        <p style="margin-bottom: 8px;"><strong>4. Substituir texto (Redação):</strong> Para ocultar o título original e inserir um novo (ex: padronizar títulos):<br>- <i>Clique com o botão esquerdo</i> sobre a linha original para o sistema selecioná-la.<br>- <i>Clique com o botão direito</i> e escolha "✏️ Criar destino e novo título...".<br>- Um novo título será injetado por cima e o texto antigo será ocultado das IAs e leitores de tela.</p>
+        <p style="margin-bottom: 8px;"><strong>5. Subemendas:</strong> Você também pode criar destinos para subemendas, preenchendo o número da subemenda e da respectiva emenda original.</p>
+        <p style="margin-bottom: 8px;"><strong>6. Exportar:</strong> Clique em "Salvar PDF/A" para baixar a versão final com os destinos gravados.</p>
+        <p style="margin-top: 12px; color: var(--color-primary);"><em>Dica:</em> Clique nos destinos criados na barra lateral para navegar rapidamente pelo documento. Clique no ícone '×' para excluí-los e desfazer qualquer substituição atrelada.</p>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="btnHelpOk" class="btn btn-primary">Entendi</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- DIALOG MODAL DE SUBSTITUIÇÃO -->
+  <dialog id="replaceModal" closedby="any" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2 id="modalTitle">Substituição Visual de Título</h2>
+        <button class="btn-close-modal" onclick="document.getElementById('replaceModal').close()" aria-label="Fechar">&times;</button>
+      </header>
+      <form id="replaceForm" method="dialog">
+        <div class="form-body">
+          <div class="input-group">
+            <label>Texto Original Selecionado:</label>
+            <div id="originalTextPreview" class="read-only-preview"></div>
+          </div>
+          
+          <div class="input-group">
+            <label for="newTitleInput">Novo Título da Emenda:</label>
+            <input type="text" id="newTitleInput" required autocomplete="off" placeholder="Ex: EMENDA Nº 3 - CMA">
+          </div>
+          
+          <div class="checkbox-group">
+            <input type="checkbox" id="chkCreateDest" checked>
+            <label for="chkCreateDest">Criar automaticamente Destino Nomeado para esta emenda</label>
+          </div>
+        </div>
+        
+        <footer class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('replaceModal').close()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Aplicar Substituição</button>
+        </footer>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- DIALOG MODAL DE SUBEMENDA -->
+  <dialog id="subemendaModal" closedby="any" aria-labelledby="subemendaModalTitle">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2 id="subemendaModalTitle">Criar Destino / Substituição de Subemenda</h2>
+        <button class="btn-close-modal" onclick="document.getElementById('subemendaModal').close()" aria-label="Fechar">&times;</button>
+      </header>
+      <form id="subemendaForm" method="dialog">
+        <div class="form-body">
+          <div id="subemendaOriginalGroup" class="input-group" style="display: none;">
+            <label>Texto Original Selecionado:</label>
+            <div id="subemendaOriginalPreview" class="read-only-preview"></div>
+          </div>
+          
+          <div class="form-row" style="display: flex; gap: 16px;">
+            <div class="input-group" style="flex: 1;">
+              <label for="subemendaEmendaNum">Número da Emenda:</label>
+              <input type="number" id="subemendaEmendaNum" required min="1" value="3">
+            </div>
+            <div class="input-group" style="flex: 1;">
+              <label for="subemendaSubNum">Número da Subemenda:</label>
+              <input type="number" id="subemendaSubNum" required min="1" value="1">
+            </div>
+          </div>
+          
+          <div id="subemendaReplaceGroup" class="input-group" style="display: none;">
+            <label for="subemendaNewTitleInput">Texto de Substituição:</label>
+            <input type="text" id="subemendaNewTitleInput" autocomplete="off" placeholder="SUBEMENDA Nº ...">
+          </div>
+        </div>
+        
+        <footer class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('subemendaModal').close()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar Subemenda</button>
+        </footer>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Script principal de inicialização -->
+  <script src="js/app.js" type="module"></script>
+</body>
+</html>

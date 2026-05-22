@@ -3,13 +3,35 @@
 Um aplicativo gráfico desktop desenvolvido em Python para automatizar a criação de "Destinos Nomeados" (Named Destinations) em arquivos PDF.
 Ideal para catalogar e indexar emendas e subemendas parlamentares, permitindo a substituição visual inteligente de títulos dentro do documento e a exportação final otimizada.
 
-## Funcionalidades Principais
-* **Criação de Destinos Nomeados**: Adição rápida de bookmarks ocultos no PDF para indexação.
-* **Substituição Visual Categórica (Redaction)**: Substituição física do texto original no documento por um texto formatado dinâmico. A ferramenta apaga canonicamente os textos do código binário do PDF usando intersecção geométrica antes de escrever o texto novo centralizado.
-* **Automação de Nomenclaturas**: Sequenciamento numérico inteligente de Emendas e Subemendas baseadas na comissão (ex: CMA, CESP).
-* **Interface Responsiva**: Renderização rápida em PyQt6 de PDFs densos.
+**NOVO:** Agora o projeto inclui uma versão **Web PWA (Progressive Web App)** totalmente client-side, que roda direto no navegador, não requer instalação e funciona offline!
 
-## Como Usar
+## Estrutura do Projeto
+
+* `desktop/`: Código-fonte, scripts de build e releases da versão Desktop em Python (PyQt6 + PyMuPDF).
+* `web/`: Código-fonte estático (HTML, CSS, JS) da versão Web PWA (Vanilla JS + pdf-lib + pdf.js).
+
+---
+
+## 🌐 Versão Web PWA (Zero Backend)
+
+A versão Web roda inteiramente na memória do navegador do usuário. Nenhum dado ou PDF é enviado para a internet, garantindo 100% de privacidade e aderência à LGPD.
+
+### Como Hospedar/Executar
+1. **Localmente (Testes):** Navegue até a pasta raiz e inicie um servidor HTTP simples (ex: `python3 -m http.server 8000`), depois acesse `http://localhost:8000/web/index.html`.
+2. **Hospedagem Estática:** Pode ser hospedado em qualquer provedor de sites estáticos, como **GitHub Pages**, **Vercel**, **Firebase Hosting**, ou distribuído internamente em um arquivo `.zip`.
+
+### Uso Básico
+* Carregue o arquivo e configure a sigla da comissão/emenda.
+* Utilize o clique direito (ContextMenu) sobre o visualizador de PDF para adicionar destinos ou substituir textos originais.
+* Após a primeira visita online, o aplicativo fica em cache no navegador e pode ser usado sem internet.
+
+---
+
+## 🖥️ Versão Desktop (Python)
+
+A versão Desktop original continua disponível em `/desktop`. Ela utiliza PyQt6 para interface gráfica e acesso robusto e de baixo nível aos streams de PDF.
+
+### Como Usar
 
 1. Clique em **'Abrir PDF'** para carregar o seu documento original.
 2. No campo **'Nº da última emenda de membro'**, informe o número da emenda que antecede a que você quer criar (se a próxima deve ser Emenda3, digite 2).
@@ -23,62 +45,14 @@ Ideal para catalogar e indexar emendas e subemendas parlamentares, permitindo a 
 10. **Clicar com botão direito** em um destino no painel permite excluí-lo.
 11. Ao finalizar as marcações, clique em **'Salvar PDF/A (Final)'** para gerar o arquivo com os destinos e textos substituídos.
 
----
-
-## Preparando o Ambiente e Compilando
-
-O código foi projetado para Python 3.12+ utilizando `PyQt6` para a interface e `PyMuPDF` (`fitz`) para o processamento aprofundado das streams do PDF.
-
-### 1. Preparação (Linux e Windows)
-Trabalhe sempre num ambiente virtual (`.venv`) isolado:
+### Compilação (Linux e Windows)
+Trabalhe sempre num ambiente virtual (`.venv`) isolado e navegue até a pasta `desktop/`:
 
 ```bash
-# Clone o repositório
 git clone https://github.com/airtonluciano/destinos-emendas-pdf.git
-cd destinos-emendas-pdf
-
-# Crie e ative o ambiente virtual
+cd destinos-emendas-pdf/desktop
 python -m venv .venv
-
-# No Linux:
-source .venv/bin/activate
-# No Windows (Prompt de Comando):
-.venv\Scripts\activate
-
-# Instale as bibliotecas necessárias
+source .venv/bin/activate  # Ou .venv\Scripts\activate no Windows
 pip install -r requirements.txt
-```
-
-> **Aviso de SO para Linux**: Como o PyQt6 interage diretamente com o renderizador de janelas, sistemas Linux muito "limpos" (sem desktop components completos) podem exigir a instalação nativa do driver de cursor do X11: `sudo apt install libxcb-cursor0`. No Windows, isso não é necessário, pois as DLLs do Windows API já estão presentes no sistema de todo mundo.
-
-### 2. Compilando o Executável Autossuficiente (Build)
-Para produzir um executável que possa ser distribuído e executado por outras pessoas com "dois cliques" sem que elas precisem instalar o Python, utilizamos o `PyInstaller`.
-
-Para facilitar, incluímos um script `build.py` que já ajusta os parâmetros invisíveis, ícone (`hand-point.png`) e empacotamento em janela única. Com o seu `.venv` ativado, apenas rode:
-
-```bash
 python build.py
 ```
-
-O resultado aparecerá dentro da pasta `dist/` como um arquivo único (`DestinosPDF.exe` no Windows, ou `DestinosPDF` no Linux). 
-
-### 3. Releases Estáveis e Verificação de Segurança (Hashes)
-Versões autossuficientes já compiladas e prontas para uso estão contidas na pasta `/releases` (separadas por `linux` e `windows`).
-
-Para garantir que o arquivo não foi corrompido durante o download e que é exatamente a versão oficial estável, disponibilizamos arquivos `.sha256.txt` junto aos executáveis contendo a assinatura de Hash original.
-
-**Como conferir a integridade do executável (Hash SHA-256):**
-
-**No Linux:**
-Abra o terminal na pasta `releases/linux` e digite:
-```bash
-sha256sum -c DestinosPDF.sha256.txt
-```
-*Se estiver correto, a saída será `DestinosPDF: OK`.*
-
-**No Windows:**
-Abra o PowerShell na pasta `releases\windows` e digite:
-```powershell
-Get-FileHash DestinosPDF.exe | Format-List
-```
-Compare o valor de `Hash` exibido na tela com a sequência de letras e números que está dentro do arquivo `DestinosPDF.exe.sha256.txt`. Se forem idênticos, o arquivo é seguro e íntegro!
