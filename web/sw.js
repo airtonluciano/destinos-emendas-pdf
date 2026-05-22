@@ -1,4 +1,4 @@
-const CACHE_NAME = 'destinos-pdf-v14';
+const CACHE_NAME = 'destinos-pdf-v15';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   './js/pdf_viewer.js',
   './js/pdf_processor.js',
   './manifest.json',
-  '../hand-point.png',
+  './hand-point.png',
   // CDN dependencies
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
