@@ -9,7 +9,13 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "../hand-point.png",
+      "src": "./hand-point.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./hand-point.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
