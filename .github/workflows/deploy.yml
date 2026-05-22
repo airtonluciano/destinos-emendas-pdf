@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 # Allow one concurrent deployment
