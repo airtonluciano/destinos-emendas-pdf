@@ -19,6 +19,7 @@ A versão Web roda inteiramente na memória do navegador do usuário. Nenhum dad
 ### Como Hospedar/Executar
 1. **Localmente (Testes):** Navegue até a pasta raiz e inicie um servidor HTTP simples (ex: `python3 -m http.server 8000`), depois acesse `http://localhost:8000/web/index.html`.
 2. **Hospedagem Estática:** Pode ser hospedado em qualquer provedor de sites estáticos, como **GitHub Pages**, **Vercel**, **Firebase Hosting**, ou distribuído internamente em um arquivo `.zip`.
+3. **Publicado para uso em:** [DestinosPDF Web](https://airtonluciano.github.io/destinos-emendas-pdf/)
 
 ### Uso Básico
 * Carregue o arquivo e configure a sigla da comissão/emenda.
