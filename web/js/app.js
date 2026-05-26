@@ -192,7 +192,9 @@ el.btnZoomOut.addEventListener('click', async () => {
 el.btnClearAll.addEventListener('click', () => {
   if (confirm('Deseja realmente limpar todos os destinos criados nesta sessão?')) {
     state.addedDestinations = {};
+    state.replacements = [];
     pdfViewer.clearAllMarkers();
+    redrawRedactions();
     updateDestinationsUI();
   }
 });
@@ -571,6 +573,31 @@ function redrawRedactions() {
 el.btnExport.addEventListener('click', async () => {
   if (!state.pdfBytes) return;
   
+  let fileHandle = null;
+  const baseName = state.fileName.substring(0, state.fileName.lastIndexOf('.')) || state.fileName;
+  const suggestedName = `${baseName} - COM MARCAÇÕES.pdf`;
+
+  // 1. Obter o handle de salvamento imediatamente para aproveitar o user gesture ativo, se disponível
+  if (window.showSaveFilePicker) {
+    try {
+      fileHandle = await window.showSaveFilePicker({
+        suggestedName: suggestedName,
+        types: [{
+          description: 'Documento PDF',
+          accept: { 'application/pdf': ['.pdf'] }
+        }],
+      });
+    } catch (err) {
+      // Se o usuário cancelou o diálogo de salvamento, abortamos silenciosamente
+      if (err.name === 'AbortError') {
+        return;
+      }
+      console.warn("showSaveFilePicker falhou ou foi bloqueado, usando fallback:", err);
+      // Caso ocorra outro erro (como restrição de segurança), mantemos fileHandle como null para usar o fallback
+    }
+  }
+
+  // 2. Alterar o estado do botão para indicar processamento
   const originalBtnText = el.btnExport.innerHTML;
   el.btnExport.innerHTML = `
     <svg class="icon animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
@@ -580,41 +607,22 @@ el.btnExport.addEventListener('click', async () => {
   el.fileInput.setAttribute('disabled', 'true');
 
   try {
-    // Executar modificações usando pdf-lib (passando uma cópia fresca do buffer blindado)
+    // 3. Executar as modificações no PDF (operação de CPU assíncrona)
     const modifiedBytes = await executePdfModifications({
       pdfBytes: state.pdfBytes.slice(0),
       replacements: state.replacements,
       destinations: state.addedDestinations
     });
     
-    // Criar blob do arquivo final
     const blob = new Blob([modifiedBytes], { type: 'application/pdf' });
     
-    // Montar nome final descritivo do arquivo
-    const baseName = state.fileName.substring(0, state.fileName.lastIndexOf('.')) || state.fileName;
-    const suggestedName = `${baseName} - COM MARCAÇÕES.pdf`;
-    
-    if (window.showSaveFilePicker) {
-      try {
-        const fileHandle = await window.showSaveFilePicker({
-          suggestedName: suggestedName,
-          types: [{
-            description: 'Documento PDF',
-            accept: { 'application/pdf': ['.pdf'] }
-          }],
-        });
-        const writable = await fileHandle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-      } catch (err) {
-        // Usuário cancelou o prompt de salvar, silenciosamente aborta sem erro falso
-        if (err.name === 'AbortError') {
-          return;
-        }
-        throw err;
-      }
+    // 4. Gravar os dados reais no arquivo
+    if (fileHandle) {
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
     } else {
-      // Fallback para navegadores antigos (Firefox, Safari antigo)
+      // Fallback para navegadores sem showSaveFilePicker ou contextos inseguros
       const link = document.createElement('a');
       link.download = suggestedName;
       link.href = URL.createObjectURL(blob);

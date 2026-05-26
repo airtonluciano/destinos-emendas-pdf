@@ -121,7 +121,7 @@ export class PdfViewer {
       
       const textContent = await page.getTextContent();
       await pdfjsLib.renderTextLayer({
-        textContent: textContent,
+        textContentSource: textContent,
         container: textLayerDiv,
         viewport: viewport,
         textDivs: []
