@@ -37,15 +37,47 @@ export class PdfViewer {
     await this.render();
   }
 
-  setZoom(newZoom) {
+  async setZoom(newZoom) {
     this.zoom = newZoom;
     if (this.pdfDoc) {
-      this.render();
+      await this.render();
     }
+  }
+
+  captureScrollAnchor(scrollTop) {
+    const pages = Array.from(this.container.querySelectorAll('.pdf-page-container'));
+    for (const pageContainer of pages) {
+      const pageTop = pageContainer.offsetTop;
+      const pageBottom = pageTop + pageContainer.offsetHeight;
+      if (scrollTop >= pageTop && scrollTop < pageBottom) {
+        return {
+          pageIndex: parseInt(pageContainer.dataset.pageIndex, 10),
+          contentY: (scrollTop - pageTop) / this.zoom
+        };
+      }
+    }
+
+    for (const pageContainer of pages) {
+      const pageTop = pageContainer.offsetTop;
+      if (pageTop + pageContainer.offsetHeight > scrollTop) {
+        return {
+          pageIndex: parseInt(pageContainer.dataset.pageIndex, 10),
+          contentY: Math.max(0, scrollTop - pageTop) / this.zoom
+        };
+      }
+    }
+
+    return null;
   }
 
   async render() {
     if (!this.pdfDoc) return;
+
+    const scrollParent = this.container.parentElement;
+    let anchor = null;
+    if (scrollParent) {
+      anchor = this.captureScrollAnchor(scrollParent.scrollTop);
+    }
 
     // Limpar o visualizador
     this.container.innerHTML = '';
@@ -107,6 +139,13 @@ export class PdfViewer {
       this.redrawMarkers(pageContainer, pageIndex);
 
       this.container.appendChild(pageContainer);
+    }
+
+    if (anchor && scrollParent) {
+      const anchorPage = this.container.querySelector(`.pdf-page-container[data-page-index="${anchor.pageIndex}"]`);
+      if (anchorPage) {
+        scrollParent.scrollTop = anchorPage.offsetTop + (anchor.contentY * this.zoom);
+      }
     }
   }
 

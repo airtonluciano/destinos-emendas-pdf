@@ -467,6 +467,9 @@ function removeDestination(name) {
   delete state.addedDestinations[name];
   pdfViewer.removeVisualMarker(name);
   updateDestinationsUI();
+
+  // 5. Sincronizar novamente as redações visuais restantes
+  redrawRedactions();
 }
 
 function updateDestinationsUI() {
@@ -559,7 +562,7 @@ function redrawRedactions() {
   overlays.forEach(overlay => overlay.remove());
 
   state.replacements.forEach(rep => {
-    applyVisualRedactionOverlay(rep.pageIndex, rep.rect, rep.newText);
+    applyVisualRedactionOverlay(rep.pageIndex, rep.rect, rep.newText, rep.destName);
   });
 }
 
